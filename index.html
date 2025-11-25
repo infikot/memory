@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Вечная Память</title>
+    <style>
+        body {
+            margin: 0; overflow: hidden; background-color: #020205;
+            font-family: 'Georgia', serif; touch-action: none;
+        }
+        canvas { display: block; }
+
+        /* --- UI СЛОЙ --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        /* Компас */
+        #compass-widget {
+            position: absolute; top: 20px; left: 20px;
+            display: flex; align-items: center; gap: 15px;
+            pointer-events: auto;
+        }
+        #compass-circle {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #compass-arrow {
+            position: absolute; top: 50%; left: 50%;
+            width: 4px; height: 40px;
+            background: linear-gradient(to top, #444 50%, #d44 50%);
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s;
+        }
+        #coords-box {
+            color: rgba(255, 255, 255, 0.6);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-shadow: 0 1px 2px black;
+        }
+
+        /* Подсказка */
+        #interaction-hint {
+            position: absolute; bottom: 15%; left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ccc; padding: 12px 24px; border-radius: 4px;
+            opacity: 0; transition: opacity 0.4s;
+            font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+
+        /* --- МОДАЛЬНОЕ ОКНО И ФОН --- */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px); /* Размытие фона */
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+        }
+        #overlay.active { opacity: 1; pointer-events: auto; }
+
+        #modal {
+            width: 90%; max-width: 450px;
+            background: linear-gradient(180deg, #1a1a20 0%, #0b0b10 100%);
+            border: 1px solid #333;
+            padding: 40px; border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+        }
+        #overlay.active #modal { transform: translateY(0); }
+
+        /* Свеча в меню */
+        .candle-container {
+            width: 20px; height: 60px; margin: 0 auto 20px auto;
+            position: relative;
+        }
+        .candle-body {
+            width: 100%; height: 100%; background: #ddd;
+            border-radius: 2px; position: relative;
+            background: linear-gradient(#eee, #ccc);
+        }
+        .candle-flame {
+            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
+            width: 12px; height: 25px;
+            background: radial-gradient(ellipse at bottom, #ff0, #f00 60%, transparent 90%);
+            border-radius: 50% 50% 20% 20%;
+            animation: flicker 1s infinite alternate;
+            filter: blur(1px);
+        }
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(0.9, 1.1); opacity: 0.7; }
+        }
+
+        #m-name { margin: 0 0 10px 0; font-weight: normal; letter-spacing: 1px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        #m-dates { color: #666; font-size: 0.9em; margin-bottom: 20px; font-style: italic; }
+        #m-msg { line-height: 1.7; color: #bbb; margin-bottom: 30px; font-size: 1.05em; }
+        
+        .close-btn {
+            background: transparent; border: 1px solid #444; color: #888;
+            padding: 10px 30px; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; font-size: 0.75em; letter-spacing: 2px;
+        }
+        .close-btn:hover { border-color: #fff; color: #fff; }
+
+        /* Мобильное управление */
+        .mobile-ctrl { display: none; pointer-events: auto; position: absolute; z-index: 20; }
+        #joystick-area {
+            bottom: 40px; left: 40px; width: 120px; height: 120px;
+            background: rgba(255, 255, 255, 0.02); border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #joystick-stick {
+            position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.1); border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none;
+        }
+        #action-btn {
+            bottom: 60px; right: 40px; width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.05); border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            display: flex; justify-content: center; align-items: center;
+            color: #ddd; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div id="compass-widget">
+            <div id="compass-circle">
+                <div id="compass-arrow"></div>
+            </div>
+            <div id="coords-box">
+                <div id="c-pos">0, 0</div>
+            </div>
+        </div>
+        <div id="interaction-hint">Нажми [E]</div>
+    </div>
+
+    <!-- Оверлей с меню -->
+    <div id="overlay">
+        <div id="modal">
+            <div class="candle-container">
+                <div class="candle-flame"></div>
+                <div class="candle-body"></div>
+            </div>
+            <h2 id="m-name">Имя</h2>
+            <div class="dates" id="m-dates">Даты</div>
+            <div class="msg" id="m-msg">Текст</div>
+            <button class="close-btn" onclick="closeModal()">Закрыть (E)</button>
+        </div>
+    </div>
+
+    <div id="joystick-area" class="mobile-ctrl"><div id="joystick-stick"></div></div>
+    <div id="action-btn" class="mobile-ctrl">Действие</div>
+
+<script>
+    // --- 1. ДАННЫЕ И ГЕНЕРАЦИЯ ---
+    
+    // Данные по умолчанию (если нет json)
+    const defaultMemory = [
+        {
+            name: "Никого..",
+            dates: "01.01.2000 — 01.01.2000",
+            msg: "Как хорошо, что тут никого нет.."
+        }
+    ];
+
+    let gravesDB = [];
+
+    async function loadData() {
+        let data = defaultMemory;
+        try {
+            const response = await fetch('memory.json');
+            if (response.ok) {
+                data = await response.json();
+            }
+        } catch (e) {
+            console.log("Используются встроенные данные (memory.json не найден)");
+        }
+        generateGraves(data);
+    }
+
+    function generateGraves(people) {
+        gravesDB = [];
+        
+        // 1. Главная могила (первая в списке)
+        if (people.length > 0) {
+            gravesDB.push({
+                x: 0, z: 300,
+                ...people[0],
+                isMain: true,
+                isEmpty: false
+            });
+        }
+
+        // 2. Остальные по спирали/кругам
+        let angle = 0;
+        let radius = 400;
+        let step = 0;
+
+        // Добавляем людей
+        for (let i = 1; i < people.length; i++) {
+            const x = Math.cos(angle) * radius;
+            const z = 300 + Math.sin(angle) * radius; // Смещаем центр к первой могиле
+            
+            gravesDB.push({
+                x: x, z: z,
+                ...people[i],
+                isMain: true,
+                isEmpty: false
+            });
+
+            // Шаг угла зависит от радиуса (чтобы не было слишком густо)
+            angle += 800 / radius; 
+            if (angle > Math.PI * 2 * (step + 1)) {
+                radius += 250;
+                step++;
+            }
+        }
+
+        // 3. Добавляем пустые могилы для атмосферы
+        const emptyCount = 15;
+        for (let i = 0; i < emptyCount; i++) {
+            const r = 500 + Math.random() * 1000;
+            const a = Math.random() * Math.PI * 2;
+            gravesDB.push({
+                x: Math.cos(a) * r,
+                z: 300 + Math.sin(a) * r,
+                isMain: false,
+                isEmpty: true
+            });
+        }
+    }
+
+    loadData();
+
+    // --- 2. СИСТЕМА ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+        document.querySelectorAll('.mobile-ctrl').forEach(el => el.style.display = 'flex');
+        document.getElementById('interaction-hint').innerText = "Нажми кнопку действия";
+    }
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- 3. ИГРОВОЙ МИР ---
+    const camera = { x: 0, z: 0, height: 500, fov: 600 }; 
+    
+    const player = { 
+        x: 0, z: 0, 
+        vx: 0, vz: 0, 
+        accel: 0.3, friction: 0.92, maxSpeed: 2.2,
+        angle: 0 // Куда смотрит тело
+    };
+
+    // Физика плаща (Verlet Integration)
+    const cape = {
+        segments: [],
+        length: 5, // Количество костей
+        segLen: 8  // Длина кости
+    };
+    // Инициализация плаща
+    for(let i=0; i<cape.length; i++) cape.segments.push({x:0, z:0, oldX:0, oldZ:0});
+
+    const particles = Array.from({length: 120}, () => ({
+        x: (Math.random() - 0.5) * 3000,
+        y: Math.random() * -1500,
+        z: Math.random() * 2000,
+        speed: Math.random() * 6 + 3
+    }));
+
+    // --- 4. УПРАВЛЕНИЕ ---
+    const keys = {};
+    let joystick = { x: 0, y: 0, active: false };
+
+    window.addEventListener('keydown', e => {
+        keys[e.code] = true;
+        if (e.code === 'KeyE') {
+            if (modalOpen) closeModal();
+            else tryInteract();
+        }
+    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    window.addEventListener('mousedown', e => { if(e.button === 2) tryInteract(); }); 
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
+    if (isMobile) {
+        const stick = document.getElementById('joystick-stick');
+        const area = document.getElementById('joystick-area');
+        let startX, startY;
+
+        area.addEventListener('touchstart', e => {
+            e.preventDefault(); joystick.active = true;
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+        }, {passive: false});
+
+        area.addEventListener('touchmove', e => {
+            e.preventDefault(); if(!joystick.active) return;
+            const dx = e.touches[0].clientX - startX;
+            const dy = e.touches[0].clientY - startY;
+            const dist = Math.min(Math.sqrt(dx*dx+dy*dy), 50);
+            const angle = Math.atan2(dy, dx);
+            joystick.x = (Math.cos(angle)*dist)/50;
+            joystick.y = (Math.sin(angle)*dist)/50;
+            stick.style.transform = `translate(calc(-50% + ${joystick.x*50}px), calc(-50% + ${joystick.y*50}px))`;
+        }, {passive: false});
+
+        area.addEventListener('touchend', e => {
+            e.preventDefault(); joystick.active = false;
+            joystick.x = 0; joystick.y = 0;
+            stick.style.transform = `translate(-50%, -50%)`;
+        });
+        
+        document.getElementById('action-btn').addEventListener('touchstart', (e) => {
+            e.preventDefault(); 
+            if (modalOpen) closeModal(); else tryInteract();
+        });
+    }
+
+    // --- 5. ЛОГИКА ---
+    let activeGrave = null;
+    let modalOpen = false;
+    let time = 0; 
+
+    function tryInteract() {
+        if (activeGrave && !modalOpen) {
+            document.getElementById('m-name').innerText = activeGrave.name;
+            document.getElementById('m-dates').innerText = activeGrave.dates;
+            document.getElementById('m-msg').innerHTML = activeGrave.msg;
+            
+            const overlay = document.getElementById('overlay');
+            overlay.classList.add('active');
+            modalOpen = true;
+        }
+    }
+    window.closeModal = function() {
+        const overlay = document.getElementById('overlay');
+        overlay.classList.remove('active');
+        modalOpen = false;
+    }
+
+    function project(x, z, y = 0) {
+        const relX = x - camera.x;
+        const relZ = z - camera.z;
+        if (relZ + camera.fov <= 0) return null;
+        const scale = camera.fov / (camera.fov + relZ);
+        const screenX = width / 2 + relX * scale;
+        const screenY = height / 2 + (camera.height - y) * scale * 0.5; 
+        return { x: screenX, y: screenY, scale: scale, zIndex: relZ };
+    }
+
+    function updateCape() {
+        // 1. Привязываем первый сегмент к плечам игрока
+        // Смещаем точку крепления чуть назад относительно угла поворота игрока
+        const attachX = player.x - Math.sin(player.angle) * 5;
+        const attachZ = player.z - Math.cos(player.angle) * 5;
+
+        cape.segments[0].x = attachX;
+        cape.segments[0].z = attachZ;
+
+        // 2. Физика для остальных сегментов
+        for(let i=1; i<cape.length; i++) {
+            const seg = cape.segments[i];
+            
+            // Verlet: x = x + (x - oldX)
+            const vx = (seg.x - seg.oldX) * 0.9; // 0.9 - затухание
+            const vz = (seg.z - seg.oldZ) * 0.9;
+
+            seg.oldX = seg.x;
+            seg.oldZ = seg.z;
+
+            seg.x += vx;
+            seg.z += vz;
+
+            // Ветер / Покачивание (когда стоим)
+            const sway = Math.sin(time * 0.5 + i) * 0.15;
+            seg.x += sway;
+        }
+
+        // 3. Ограничения (Constraints) - чтобы кости не растягивались
+        for(let k=0; k<5; k++) { // Несколько итераций для жесткости
+            for(let i=1; i<cape.length; i++) {
+                const prev = cape.segments[i-1];
+                const curr = cape.segments[i];
+
+                const dx = curr.x - prev.x;
+                const dz = curr.z - prev.z;
+                const dist = Math.sqrt(dx*dx + dz*dz);
+                
+                if (dist > 0) {
+                    const correction = (cape.segLen - dist) / dist * 0.5; // 0.5 - жесткость пружины
+                    const offX = dx * correction;
+                    const offZ = dz * correction;
+
+                    // Двигаем текущий сегмент к предыдущему
+                    curr.x += offX;
+                    curr.z += offZ;
+                    
+                    // Двигаем предыдущий к текущему (кроме 0-го, он прибит к игроку)
+                    if (i > 1) {
+                        prev.x -= offX;
+                        prev.z -= offZ;
+                    }
+                }
+            }
+        }
+    }
+
+    function update() {
+        if (modalOpen) return;
+        time += 0.05;
+
+        // Ввод
+        let ax = 0, az = 0;
+        if (isMobile) {
+            ax = joystick.x; az = joystick.y;
+        } else {
+            if (keys['KeyW'] || keys['ArrowUp']) az = 1;
+            if (keys['KeyS'] || keys['ArrowDown']) az = -1;
+            if (keys['KeyA'] || keys['ArrowLeft']) ax = -1;
+            if (keys['KeyD'] || keys['ArrowRight']) ax = 1;
+        }
+
+        // Физика игрока
+        player.vx += ax * player.accel;
+        player.vz += az * player.accel;
+        
+        const speed = Math.sqrt(player.vx**2 + player.vz**2);
+        if (speed > player.maxSpeed) {
+            player.vx = (player.vx / speed) * player.maxSpeed;
+            player.vz = (player.vz / speed) * player.maxSpeed;
+        }
+
+        player.vx *= player.friction;
+        player.vz *= player.friction;
+
+        // Обновляем угол поворота тела (для плаща)
+        if (speed > 0.1) {
+            // Плавный поворот к вектору движения
+            const targetAngle = Math.atan2(player.vx, player.vz);
+            // Простая интерполяция угла
+            let diff = targetAngle - player.angle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            player.angle += diff * 0.1;
+        }
+
+        let nextX = player.x + player.vx;
+        let nextZ = player.z + player.vz;
+
+        // Коллизия
+        const playerSize = 15;
+        const graveSize = 30; 
+
+        gravesDB.forEach(g => {
+            const dx = nextX - g.x;
+            const dz = nextZ - g.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            
+            if (dist < (playerSize + graveSize)) {
+                const angle = Math.atan2(dz, dx);
+                const push = (playerSize + graveSize) - dist + 1;
+                nextX += Math.cos(angle) * push;
+                nextZ += Math.sin(angle) * push;
+                player.vx *= 0.5;
+                player.vz *= 0.5;
+            }
+        });
+
+        player.x = nextX;
+        player.z = nextZ;
+
+        // Обновляем плащ
+        updateCape();
+
+        // Камера
+        camera.x += (player.x - camera.x) * 0.1;
+        camera.z = player.z - 350; 
+
+        // UI
+        document.getElementById('c-pos').innerText = `${Math.round(player.x)}, ${Math.round(player.z)}`;
+        // Вращение стрелки компаса (показывает на Север, т.е. -Z)
+        // Так как камера не вращается, стрелка всегда вверх, но если бы вращалась...
+        // Сделаем стрелку реагирующей на движение игрока для красоты
+        const compassArrow = document.getElementById('compass-arrow');
+        // Просто показывает направление движения
+        if (speed > 0.1) {
+            const deg = Math.atan2(player.vx, -player.vz) * (180 / Math.PI);
+            compassArrow.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+        }
+
+        // Взаимодействие
+        activeGrave = null;
+        gravesDB.forEach(g => {
+            if (g.isEmpty) return; // Пустые могилы не интерактивны
+            const dist = Math.sqrt((player.x - g.x)**2 + (player.z - g.z)**2);
+            if (dist < 70) activeGrave = g;
+        });
+        document.getElementById('interaction-hint').style.opacity = activeGrave ? 1 : 0;
+    }
+
+    function draw() {
+        // Фон
+        ctx.fillStyle = '#020205';
+        ctx.fillRect(0, 0, width, height);
+
+        // Земля
+        const horizonY = height / 2;
+        const groundGrad = ctx.createLinearGradient(0, horizonY, 0, height);
+        groundGrad.addColorStop(0, '#050508');
+        groundGrad.addColorStop(1, '#121218');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, horizonY, width, height - horizonY);
+
+        // Сетка
+        ctx.strokeStyle = 'rgba(50, 50, 70, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const camZGrid = Math.floor(camera.z / 200) * 200;
+        for (let x = -2000; x <= 2000; x += 200) {
+            const p1 = project(x, camera.z + 100);
+            const p2 = project(x, camera.z + 2000);
+            if (p1 && p2) { ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); }
+        }
+        for (let z = camZGrid; z < camZGrid + 2000; z += 200) {
+             const p1 = project(-2000, z);
+             const p2 = project(2000, z);
+             if (p1 && p2) { ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); }
+        }
+        ctx.stroke();
+
+        const renderList = [];
+
+        // Могилы
+        gravesDB.forEach(g => {
+            const p = project(g.x, g.z);
+            if (p) renderList.push({ type: 'grave', data: g, ...p });
+        });
+
+        // Игрок
+        const pProj = project(player.x, player.z);
+        if (pProj) renderList.push({ type: 'player', ...pProj });
+
+        // Сортировка
+        renderList.sort((a, b) => b.zIndex - a.zIndex);
+
+        renderList.forEach(obj => {
+            const s = obj.scale;
+            const alpha = Math.max(0, 1 - obj.zIndex / 1800);
+
+            if (obj.type === 'grave') {
+                const w = 50 * s;
+                const h = 70 * s;
+                const depth = 15 * s;
+                
+                ctx.globalAlpha = alpha;
+                
+                // Тень
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.beginPath(); ctx.ellipse(obj.x, obj.y, w/1.2, w/3, 0, 0, Math.PI*2); ctx.fill();
+
+                // Цвет камня (пустые могилы темнее и старее)
+                const stoneColor = obj.data.isEmpty ? '#2a2a2a' : '#333';
+                const sideColor = obj.data.isEmpty ? '#1a1a1a' : '#222';
+
+                // Боковая грань
+                ctx.fillStyle = sideColor;
+                ctx.beginPath();
+                ctx.moveTo(obj.x - w/2, obj.y);
+                ctx.lineTo(obj.x - w/2 + depth, obj.y - depth);
+                ctx.lineTo(obj.x - w/2 + depth, obj.y - h - depth + w/2);
+                ctx.lineTo(obj.x - w/2, obj.y - h + w/2);
+                ctx.fill();
+
+                // Лицевая грань
+                ctx.fillStyle = stoneColor;
+                ctx.beginPath();
+                ctx.moveTo(obj.x - w/2, obj.y);
+                ctx.lineTo(obj.x + w/2, obj.y);
+                ctx.lineTo(obj.x + w/2, obj.y - h + w/2);
+                ctx.arc(obj.x, obj.y - h + w/2, w/2, 0, Math.PI, true);
+                ctx.lineTo(obj.x - w/2, obj.y);
+                ctx.fill();
+
+                // Обводка
+                ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5 * s;
+                ctx.stroke();
+
+                // Декор
+                if (!obj.data.isEmpty) {
+                    ctx.fillStyle = '#222';
+                    ctx.fillRect(obj.x - 2*s, obj.y - h + 20*s, 4*s, 30*s);
+                    ctx.fillRect(obj.x - 10*s, obj.y - h + 30*s, 20*s, 4*s);
+
+                    // Свеча
+                    const cX = obj.x;
+                    const cY = obj.y - 5*s;
+                    ctx.fillStyle = `rgba(255, 160, 50, ${0.6 + Math.sin(time + obj.x)*0.2})`;
+                    ctx.beginPath(); ctx.arc(cX, cY, 4*s, 0, Math.PI*2); ctx.fill();
+                    
+                    const grad = ctx.createRadialGradient(cX, cY, 0, cX, cY, 50*s);
+                    grad.addColorStop(0, 'rgba(255, 140, 0, 0.3)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath(); ctx.arc(cX, cY, 50*s, 0, Math.PI*2); ctx.fill();
+                } else {
+                    // Трещины для пустых могил
+                    ctx.strokeStyle = '#111'; ctx.lineWidth = 1 * s;
+                    ctx.beginPath();
+                    ctx.moveTo(obj.x - 10*s, obj.y - h + 10*s);
+                    ctx.lineTo(obj.x + 5*s, obj.y - h + 25*s);
+                    ctx.stroke();
+                }
+            } 
+            else if (obj.type === 'player') {
+                const size = 20 * s;
+                ctx.globalAlpha = 1;
+
+                // 1. Свечение
+                const grad = ctx.createRadialGradient(obj.x, obj.y - size, size/2, obj.x, obj.y - size, size*8);
+                grad.addColorStop(0, 'rgba(180, 180, 200, 0.25)');
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(obj.x, obj.y - size, size*8, 0, Math.PI*2); ctx.fill();
+
+                // 2. Плащ (Многосегментный)
+                ctx.fillStyle = '#0a0a0a';
+                ctx.beginPath();
+                
+                // Рисуем плащ, проходя через проекции всех сегментов
+                // Левая сторона
+                let leftPoints = [];
+                let rightPoints = [];
+
+                for(let i=0; i<cape.length; i++) {
+                    const seg = cape.segments[i];
+                    // Высота сегмента плаща (спадает вниз)
+                    const segY = 20 - i * 2; 
+                    const p = project(seg.x, seg.z, segY);
+                    
+                    if (p) {
+                        // Ширина плаща сужается к концу
+                        const width = (size/1.5) * (1 - i/cape.length * 0.6) * p.scale;
+                        leftPoints.push({x: p.x - width, y: p.y});
+                        rightPoints.push({x: p.x + width, y: p.y});
+                    }
+                }
+
+                if (leftPoints.length > 1) {
+                    ctx.moveTo(leftPoints[0].x, leftPoints[0].y);
+                    // Кривая по левой стороне
+                    for(let i=1; i<leftPoints.length; i++) ctx.lineTo(leftPoints[i].x, leftPoints[i].y);
+                    // Низ
+                    ctx.lineTo(rightPoints[rightPoints.length-1].x, rightPoints[rightPoints.length-1].y);
+                    // Кривая по правой стороне (обратно)
+                    for(let i=rightPoints.length-2; i>=0; i--) ctx.lineTo(rightPoints[i].x, rightPoints[i].y);
+                    ctx.fill();
+                }
+
+                // 3. Тело
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.ellipse(obj.x, obj.y - size, size/2.5, size, 0, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Голова
+                ctx.fillStyle = '#050505';
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y - size*1.8, size/2.2, 0, Math.PI*2);
+                ctx.fill();
+            }
+        });
+
+        ctx.globalAlpha = 1;
+
+        // Частицы
+        particles.forEach(p => {
+            p.y += p.speed;
+            if (p.y > 0) p.y = -1500; 
+            
+            const proj = project(camera.x + p.x, camera.z + p.z, -p.y);
+            
+            if (proj) {
+                ctx.fillStyle = `rgba(150, 150, 160, ${0.4 * (1 - proj.zIndex/2000)})`;
+                ctx.beginPath(); ctx.arc(proj.x, proj.y, 1.5 * proj.scale, 0, Math.PI*2); ctx.fill();
+            }
+        });
+
+        requestAnimationFrame(() => {
+            update();
+            draw();
+        });
+    }
+
+    draw();
+</script>
+</body>
+</html>
