@@ -26,95 +26,173 @@
         #compass-circle {
             width: 50px; height: 50px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: linear-gradient(135deg, rgba(30,30,40,0.6), rgba(10,10,15,0.8));
             backdrop-filter: blur(4px);
             position: relative;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         #compass-arrow {
             position: absolute; top: 50%; left: 50%;
-            width: 4px; height: 40px;
-            background: linear-gradient(to top, #444 50%, #d44 50%);
+            width: 2px; height: 36px;
+            background: linear-gradient(to top, #555 50%, #d44 50%);
             transform: translate(-50%, -50%);
             transition: transform 0.1s;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
         }
         #coords-box {
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(200, 200, 220, 0.7);
             font-family: 'Courier New', monospace;
-            font-size: 12px;
+            font-size: 11px;
             text-shadow: 0 1px 2px black;
+            letter-spacing: 1px;
         }
 
         /* Подсказка */
         #interaction-hint {
             position: absolute; bottom: 15%; left: 50%;
             transform: translateX(-50%);
-            background: rgba(10, 10, 15, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #ccc; padding: 12px 24px; border-radius: 4px;
+            background: rgba(15, 15, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ccc; padding: 12px 24px; border-radius: 30px;
             opacity: 0; transition: opacity 0.4s;
-            font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+            font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
         }
 
-        /* --- МОДАЛЬНОЕ ОКНО И ФОН --- */
+        /* --- МОДАЛЬНОЕ ОКНО --- */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px); /* Размытие фона */
+            background: rgba(0, 0, 0, 0.8); /* Темнее фон */
+            backdrop-filter: blur(12px);
             opacity: 0; pointer-events: none;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.6s ease;
             z-index: 100; display: flex; justify-content: center; align-items: center;
         }
         #overlay.active { opacity: 1; pointer-events: auto; }
 
         #modal {
-            width: 90%; max-width: 450px;
-            background: linear-gradient(180deg, #1a1a20 0%, #0b0b10 100%);
+            width: 85%; max-width: 420px;
+            /* Очень темный градиент, чтобы свеча светилась */
+            background: radial-gradient(circle at top center, #2a2a35 0%, #111 60%, #050505 100%);
             border: 1px solid #333;
-            padding: 40px; border-radius: 2px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            padding: 50px 30px 40px 30px; border-radius: 4px;
+            box-shadow: 0 30px 80px rgba(0,0,0,1);
             text-align: center;
-            transform: translateY(20px);
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform: translateY(30px);
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
             position: relative;
+            overflow: hidden; /* Чтобы свет не вылезал криво */
         }
         #overlay.active #modal { transform: translateY(0); }
 
-        /* Свеча в меню */
-        .candle-container {
-            width: 20px; height: 60px; margin: 0 auto 20px auto;
+        /* --- РЕАЛИСТИЧНАЯ СВЕЧА --- */
+        .candle-wrapper {
             position: relative;
-        }
-        .candle-body {
-            width: 100%; height: 100%; background: #ddd;
-            border-radius: 2px; position: relative;
-            background: linear-gradient(#eee, #ccc);
-        }
-        .candle-flame {
-            position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
-            width: 12px; height: 25px;
-            background: radial-gradient(ellipse at bottom, #ff0, #f00 60%, transparent 90%);
-            border-radius: 50% 50% 20% 20%;
-            animation: flicker 1s infinite alternate;
-            filter: blur(1px);
-        }
-        @keyframes flicker {
-            0% { transform: translateX(-50%) scale(1); opacity: 0.9; }
-            100% { transform: translateX(-50%) scale(0.9, 1.1); opacity: 0.7; }
+            width: 100%;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin-bottom: 20px;
         }
 
-        #m-name { margin: 0 0 10px 0; font-weight: normal; letter-spacing: 1px; color: #fff; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        #m-dates { color: #666; font-size: 0.9em; margin-bottom: 20px; font-style: italic; }
-        #m-msg { line-height: 1.7; color: #bbb; margin-bottom: 30px; font-size: 1.05em; }
+        /* Тело свечи */
+        .wax {
+            position: relative;
+            width: 40px;
+            height: 70px;
+            background: linear-gradient(to right, #e0e0e0, #fff 40%, #ccc);
+            border-radius: 3px;
+            box-shadow: inset -5px 0 10px rgba(0,0,0,0.1);
+        }
+        /* Верхняя часть (лужица воска) */
+        .wax::before {
+            content: '';
+            position: absolute;
+            top: -10px; left: 0;
+            width: 100%; height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.1); /* Вогнутость */
+            z-index: 2;
+        }
+        /* Фитиль */
+        .wick {
+            position: absolute;
+            top: -18px; left: 50%;
+            transform: translateX(-50%);
+            width: 3px; height: 15px;
+            background: #222;
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        /* Пламя */
+        .flame {
+            position: absolute;
+            top: -55px; left: 50%;
+            transform-origin: 50% 100%;
+            width: 20px; height: 40px;
+            border-radius: 50% 50% 20% 20%;
+            background: rgba(255, 255, 255, 1);
+            background: linear-gradient(white 80%, transparent);
+            animation: flicker 3s linear infinite;
+            z-index: 3;
+            filter: blur(1px); /* Мягкость */
+        }
+        
+        /* Цвета пламени (через тени для мягкости) */
+        .flame::after {
+            content: '';
+            position: absolute;
+            top: 10%; left: 10%; width: 80%; height: 80%;
+            border-radius: 50% 50% 20% 20%;
+            background: radial-gradient(ellipse at bottom, 
+                rgba(100, 150, 255, 0.6) 0%, /* Синее ядро */
+                rgba(255, 200, 0, 0.8) 40%, /* Желтая середина */
+                rgba(255, 100, 0, 0.6) 100% /* Оранжевый верх */
+            );
+            mix-blend-mode: screen;
+        }
+
+        /* Ореол света вокруг */
+        .glow {
+            position: absolute;
+            top: -40px; left: 50%;
+            transform: translateX(-50%);
+            width: 120px; height: 120px;
+            background: radial-gradient(circle, rgba(255, 160, 50, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: glow-pulse 3s infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes flicker {
+            0%   { transform: translateX(-50%) rotate(-2deg) scaleY(1.0); }
+            20%  { transform: translateX(-50%) rotate(1deg) scaleY(1.05); }
+            40%  { transform: translateX(-50%) rotate(-1deg) scaleY(1.02); }
+            60%  { transform: translateX(-50%) rotate(2deg) scaleY(1.0); }
+            80%  { transform: translateX(-50%) rotate(-1deg) scaleY(0.95); }
+            100% { transform: translateX(-50%) rotate(-2deg) scaleY(1.0); }
+        }
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.6; transform: translateX(-50%) scale(0.95); }
+        }
+
+        #m-name { margin: 0 0 10px 0; font-weight: normal; letter-spacing: 2px; color: #fff; border-bottom: 1px solid #444; padding-bottom: 15px; text-transform: uppercase; font-size: 1.4em; }
+        #m-dates { color: #888; font-size: 0.9em; margin-bottom: 25px; font-style: italic; font-family: 'Courier New', monospace; }
+        #m-msg { line-height: 1.8; color: #ccc; margin-bottom: 35px; font-size: 1.05em; }
         
         .close-btn {
-            background: transparent; border: 1px solid #444; color: #888;
-            padding: 10px 30px; cursor: pointer; transition: 0.3s;
-            text-transform: uppercase; font-size: 0.75em; letter-spacing: 2px;
+            background: transparent; border: 1px solid #555; color: #888;
+            padding: 12px 35px; cursor: pointer; transition: 0.3s;
+            text-transform: uppercase; font-size: 0.7em; letter-spacing: 2px;
+            border-radius: 2px;
         }
-        .close-btn:hover { border-color: #fff; color: #fff; }
+        .close-btn:hover { border-color: #aaa; color: #fff; background: rgba(255,255,255,0.05); }
 
         /* Мобильное управление */
         .mobile-ctrl { display: none; pointer-events: auto; position: absolute; z-index: 20; }
@@ -127,6 +205,7 @@
             position: absolute; top: 50%; left: 50%; width: 50px; height: 50px;
             background: rgba(255, 255, 255, 0.1); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
+            box-shadow: 0 0 10px rgba(255,255,255,0.05);
         }
         #action-btn {
             bottom: 60px; right: 40px; width: 80px; height: 80px;
@@ -135,6 +214,7 @@
             display: flex; justify-content: center; align-items: center;
             color: #ddd; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
         }
+        #action-btn:active { background: rgba(255, 255, 255, 0.15); }
     </style>
 </head>
 <body>
@@ -156,9 +236,12 @@
     <!-- Оверлей с меню -->
     <div id="overlay">
         <div id="modal">
-            <div class="candle-container">
-                <div class="candle-flame"></div>
-                <div class="candle-body"></div>
+            <div class="candle-wrapper">
+                <div class="glow"></div>
+                <div class="wax">
+                    <div class="wick"></div>
+                    <div class="flame"></div>
+                </div>
             </div>
             <h2 id="m-name">Имя</h2>
             <div class="dates" id="m-dates">Даты</div>
@@ -192,7 +275,7 @@
                 data = await response.json();
             }
         } catch (e) {
-            console.log("Используются встроенные данные (memory.json не найден)");
+            console.log("Используются встроенные данные");
         }
         generateGraves(data);
     }
@@ -200,7 +283,7 @@
     function generateGraves(people) {
         gravesDB = [];
         
-        // 1. Главная могила (первая в списке)
+        // 1. Главная могила
         if (people.length > 0) {
             gravesDB.push({
                 x: 0, z: 300,
@@ -210,15 +293,14 @@
             });
         }
 
-        // 2. Остальные по спирали/кругам
+        // 2. Остальные по спирали
         let angle = 0;
         let radius = 400;
         let step = 0;
 
-        // Добавляем людей
         for (let i = 1; i < people.length; i++) {
             const x = Math.cos(angle) * radius;
-            const z = 300 + Math.sin(angle) * radius; // Смещаем центр к первой могиле
+            const z = 300 + Math.sin(angle) * radius;
             
             gravesDB.push({
                 x: x, z: z,
@@ -227,7 +309,6 @@
                 isEmpty: false
             });
 
-            // Шаг угла зависит от радиуса (чтобы не было слишком густо)
             angle += 800 / radius; 
             if (angle > Math.PI * 2 * (step + 1)) {
                 radius += 250;
@@ -235,7 +316,7 @@
             }
         }
 
-        // 3. Добавляем пустые могилы для атмосферы
+        // 3. Пустые могилы
         const emptyCount = 15;
         for (let i = 0; i < emptyCount; i++) {
             const r = 500 + Math.random() * 1000;
@@ -276,16 +357,15 @@
         x: 0, z: 0, 
         vx: 0, vz: 0, 
         accel: 0.3, friction: 0.92, maxSpeed: 2.2,
-        angle: 0 // Куда смотрит тело
+        angle: 0 
     };
 
-    // Физика плаща (Verlet Integration)
+    // Плащ
     const cape = {
         segments: [],
-        length: 5, // Количество костей
-        segLen: 8  // Длина кости
+        length: 5, 
+        segLen: 8 
     };
-    // Инициализация плаща
     for(let i=0; i<cape.length; i++) cape.segments.push({x:0, z:0, oldX:0, oldZ:0});
 
     const particles = Array.from({length: 120}, () => ({
@@ -376,20 +456,15 @@
     }
 
     function updateCape() {
-        // 1. Привязываем первый сегмент к плечам игрока
-        // Смещаем точку крепления чуть назад относительно угла поворота игрока
         const attachX = player.x - Math.sin(player.angle) * 5;
         const attachZ = player.z - Math.cos(player.angle) * 5;
 
         cape.segments[0].x = attachX;
         cape.segments[0].z = attachZ;
 
-        // 2. Физика для остальных сегментов
         for(let i=1; i<cape.length; i++) {
             const seg = cape.segments[i];
-            
-            // Verlet: x = x + (x - oldX)
-            const vx = (seg.x - seg.oldX) * 0.9; // 0.9 - затухание
+            const vx = (seg.x - seg.oldX) * 0.9; 
             const vz = (seg.z - seg.oldZ) * 0.9;
 
             seg.oldX = seg.x;
@@ -398,13 +473,11 @@
             seg.x += vx;
             seg.z += vz;
 
-            // Ветер / Покачивание (когда стоим)
             const sway = Math.sin(time * 0.5 + i) * 0.15;
             seg.x += sway;
         }
 
-        // 3. Ограничения (Constraints) - чтобы кости не растягивались
-        for(let k=0; k<5; k++) { // Несколько итераций для жесткости
+        for(let k=0; k<5; k++) { 
             for(let i=1; i<cape.length; i++) {
                 const prev = cape.segments[i-1];
                 const curr = cape.segments[i];
@@ -414,15 +487,13 @@
                 const dist = Math.sqrt(dx*dx + dz*dz);
                 
                 if (dist > 0) {
-                    const correction = (cape.segLen - dist) / dist * 0.5; // 0.5 - жесткость пружины
+                    const correction = (cape.segLen - dist) / dist * 0.5; 
                     const offX = dx * correction;
                     const offZ = dz * correction;
 
-                    // Двигаем текущий сегмент к предыдущему
                     curr.x += offX;
                     curr.z += offZ;
                     
-                    // Двигаем предыдущий к текущему (кроме 0-го, он прибит к игроку)
                     if (i > 1) {
                         prev.x -= offX;
                         prev.z -= offZ;
@@ -439,7 +510,9 @@
         // Ввод
         let ax = 0, az = 0;
         if (isMobile) {
-            ax = joystick.x; az = joystick.y;
+            ax = joystick.x;
+            // ИНВЕРСИЯ: Тянем вниз (y>0) -> идем назад (z уменьшается, к камере)
+            az = -joystick.y; 
         } else {
             if (keys['KeyW'] || keys['ArrowUp']) az = 1;
             if (keys['KeyS'] || keys['ArrowDown']) az = -1;
@@ -447,7 +520,7 @@
             if (keys['KeyD'] || keys['ArrowRight']) ax = 1;
         }
 
-        // Физика игрока
+        // Физика
         player.vx += ax * player.accel;
         player.vz += az * player.accel;
         
@@ -460,11 +533,8 @@
         player.vx *= player.friction;
         player.vz *= player.friction;
 
-        // Обновляем угол поворота тела (для плаща)
         if (speed > 0.1) {
-            // Плавный поворот к вектору движения
             const targetAngle = Math.atan2(player.vx, player.vz);
-            // Простая интерполяция угла
             let diff = targetAngle - player.angle;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -496,29 +566,22 @@
         player.x = nextX;
         player.z = nextZ;
 
-        // Обновляем плащ
         updateCape();
 
-        // Камера
         camera.x += (player.x - camera.x) * 0.1;
         camera.z = player.z - 350; 
 
-        // UI
         document.getElementById('c-pos').innerText = `${Math.round(player.x)}, ${Math.round(player.z)}`;
-        // Вращение стрелки компаса (показывает на Север, т.е. -Z)
-        // Так как камера не вращается, стрелка всегда вверх, но если бы вращалась...
-        // Сделаем стрелку реагирующей на движение игрока для красоты
+        
         const compassArrow = document.getElementById('compass-arrow');
-        // Просто показывает направление движения
         if (speed > 0.1) {
             const deg = Math.atan2(player.vx, -player.vz) * (180 / Math.PI);
             compassArrow.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
         }
 
-        // Взаимодействие
         activeGrave = null;
         gravesDB.forEach(g => {
-            if (g.isEmpty) return; // Пустые могилы не интерактивны
+            if (g.isEmpty) return; 
             const dist = Math.sqrt((player.x - g.x)**2 + (player.z - g.z)**2);
             if (dist < 70) activeGrave = g;
         });
@@ -526,11 +589,9 @@
     }
 
     function draw() {
-        // Фон
         ctx.fillStyle = '#020205';
         ctx.fillRect(0, 0, width, height);
 
-        // Земля
         const horizonY = height / 2;
         const groundGrad = ctx.createLinearGradient(0, horizonY, 0, height);
         groundGrad.addColorStop(0, '#050508');
@@ -538,7 +599,6 @@
         ctx.fillStyle = groundGrad;
         ctx.fillRect(0, horizonY, width, height - horizonY);
 
-        // Сетка
         ctx.strokeStyle = 'rgba(50, 50, 70, 0.15)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -557,17 +617,14 @@
 
         const renderList = [];
 
-        // Могилы
         gravesDB.forEach(g => {
             const p = project(g.x, g.z);
             if (p) renderList.push({ type: 'grave', data: g, ...p });
         });
 
-        // Игрок
         const pProj = project(player.x, player.z);
         if (pProj) renderList.push({ type: 'player', ...pProj });
 
-        // Сортировка
         renderList.sort((a, b) => b.zIndex - a.zIndex);
 
         renderList.forEach(obj => {
@@ -581,15 +638,12 @@
                 
                 ctx.globalAlpha = alpha;
                 
-                // Тень
                 ctx.fillStyle = 'rgba(0,0,0,0.6)';
                 ctx.beginPath(); ctx.ellipse(obj.x, obj.y, w/1.2, w/3, 0, 0, Math.PI*2); ctx.fill();
 
-                // Цвет камня (пустые могилы темнее и старее)
                 const stoneColor = obj.data.isEmpty ? '#2a2a2a' : '#333';
                 const sideColor = obj.data.isEmpty ? '#1a1a1a' : '#222';
 
-                // Боковая грань
                 ctx.fillStyle = sideColor;
                 ctx.beginPath();
                 ctx.moveTo(obj.x - w/2, obj.y);
@@ -598,7 +652,6 @@
                 ctx.lineTo(obj.x - w/2, obj.y - h + w/2);
                 ctx.fill();
 
-                // Лицевая грань
                 ctx.fillStyle = stoneColor;
                 ctx.beginPath();
                 ctx.moveTo(obj.x - w/2, obj.y);
@@ -608,17 +661,14 @@
                 ctx.lineTo(obj.x - w/2, obj.y);
                 ctx.fill();
 
-                // Обводка
                 ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5 * s;
                 ctx.stroke();
 
-                // Декор
                 if (!obj.data.isEmpty) {
                     ctx.fillStyle = '#222';
                     ctx.fillRect(obj.x - 2*s, obj.y - h + 20*s, 4*s, 30*s);
                     ctx.fillRect(obj.x - 10*s, obj.y - h + 30*s, 20*s, 4*s);
 
-                    // Свеча
                     const cX = obj.x;
                     const cY = obj.y - 5*s;
                     ctx.fillStyle = `rgba(255, 160, 50, ${0.6 + Math.sin(time + obj.x)*0.2})`;
@@ -630,7 +680,6 @@
                     ctx.fillStyle = grad;
                     ctx.beginPath(); ctx.arc(cX, cY, 50*s, 0, Math.PI*2); ctx.fill();
                 } else {
-                    // Трещины для пустых могил
                     ctx.strokeStyle = '#111'; ctx.lineWidth = 1 * s;
                     ctx.beginPath();
                     ctx.moveTo(obj.x - 10*s, obj.y - h + 10*s);
@@ -642,30 +691,24 @@
                 const size = 20 * s;
                 ctx.globalAlpha = 1;
 
-                // 1. Свечение
                 const grad = ctx.createRadialGradient(obj.x, obj.y - size, size/2, obj.x, obj.y - size, size*8);
                 grad.addColorStop(0, 'rgba(180, 180, 200, 0.25)');
                 grad.addColorStop(1, 'rgba(0,0,0,0)');
                 ctx.fillStyle = grad;
                 ctx.beginPath(); ctx.arc(obj.x, obj.y - size, size*8, 0, Math.PI*2); ctx.fill();
 
-                // 2. Плащ (Многосегментный)
                 ctx.fillStyle = '#0a0a0a';
                 ctx.beginPath();
                 
-                // Рисуем плащ, проходя через проекции всех сегментов
-                // Левая сторона
                 let leftPoints = [];
                 let rightPoints = [];
 
                 for(let i=0; i<cape.length; i++) {
                     const seg = cape.segments[i];
-                    // Высота сегмента плаща (спадает вниз)
                     const segY = 20 - i * 2; 
                     const p = project(seg.x, seg.z, segY);
                     
                     if (p) {
-                        // Ширина плаща сужается к концу
                         const width = (size/1.5) * (1 - i/cape.length * 0.6) * p.scale;
                         leftPoints.push({x: p.x - width, y: p.y});
                         rightPoints.push({x: p.x + width, y: p.y});
@@ -674,22 +717,17 @@
 
                 if (leftPoints.length > 1) {
                     ctx.moveTo(leftPoints[0].x, leftPoints[0].y);
-                    // Кривая по левой стороне
                     for(let i=1; i<leftPoints.length; i++) ctx.lineTo(leftPoints[i].x, leftPoints[i].y);
-                    // Низ
                     ctx.lineTo(rightPoints[rightPoints.length-1].x, rightPoints[rightPoints.length-1].y);
-                    // Кривая по правой стороне (обратно)
                     for(let i=rightPoints.length-2; i>=0; i--) ctx.lineTo(rightPoints[i].x, rightPoints[i].y);
                     ctx.fill();
                 }
 
-                // 3. Тело
                 ctx.fillStyle = '#111';
                 ctx.beginPath();
                 ctx.ellipse(obj.x, obj.y - size, size/2.5, size, 0, 0, Math.PI*2);
                 ctx.fill();
                 
-                // Голова
                 ctx.fillStyle = '#050505';
                 ctx.beginPath();
                 ctx.arc(obj.x, obj.y - size*1.8, size/2.2, 0, Math.PI*2);
@@ -699,7 +737,6 @@
 
         ctx.globalAlpha = 1;
 
-        // Частицы
         particles.forEach(p => {
             p.y += p.speed;
             if (p.y > 0) p.y = -1500; 
